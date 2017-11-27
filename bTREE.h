@@ -4,34 +4,58 @@ using namespace std;
 
 class bTREE
 {
-    struct treeNode{
-        string data;
-        int time;
-    };
-    
-private:
-    //some data structure to hold your treeNodes together ...
-    //DATASTUCTURE treeNodes tree;
-    //any helper private variables you need
-    
 public:
-    bTREE();
-    ~bTREE();
+	struct treeNode {
+		string data;
+		int time;
+		bool leaf;
+		treeNode* leftNode;
+		treeNode* rightNode;
+		treeNode* parent;
+	};
+private:
+	treeNode* tree;
     
-    int dataInserted();
-    int numberOfNodes();
-    
-    bool insert(string, int);
-    
-    bool find(string);
-    
-    string locate(string);
-    
-    
-    friend bool operator==(const bTREE& lhs, const bTREE& rhs);
-    friend bool operator!=(const bTREE& lhs, const bTREE& rhs);
+	treeNode* insert2(treeNode*, treeNode*); //****
 
-    friend std::ostream& operator<<(std::ostream& out, const bTREE& p);
+	//int height(treeNode*) const;//****
+
+	int find(string, int, treeNode*, bool&) const;//****
+	string locate(string, treeNode*, string) const; //***
+
+	void clearNode(treeNode*);//****
+	int dataInserted(treeNode*) const;//****
+	int numberOfNodes(treeNode*) const;//****
+
+	ostream& display(std::ostream&, treeNode*) const; //***
+	void displayLeft(ostream&, treeNode*, string) const; //***
+	void displayRight(ostream&, treeNode*, string) const; //***
+
+	bool checkEquality(treeNode*, treeNode*) const; //***
+public:
+    bTREE();//****
+    ~bTREE();//****
+
+	void setTree(treeNode* temp) {
+		tree = temp;
+	}
+
+	int height(treeNode*) const;//****
+
+    int dataInserted() const;//****
+    int numberOfNodes() const;//****
     
+    int insert(string, int);//****
+    
+	int find(string data, int time = -1) const;//****
+
+	treeNode* getTree() const;//****
+
+    string locate(string) const; //***
+    
+    friend bool operator==(const bTREE&, const bTREE&); //***
+    friend bool operator!=(const bTREE&, const bTREE&); //***
+	friend ostream& operator<<(ostream&, const bTREE&); //***
+	//friend ostream& operator ^(const bTREE& lhs, const bTREE& rhs);
 };
 

@@ -9,6 +9,7 @@ public:
 		string data;
 		int time;
 		bool leaf;
+		int height;
 		treeNode* leftNode;
 		treeNode* rightNode;
 		treeNode* parent;
@@ -16,9 +17,7 @@ public:
 private:
 	treeNode* tree;
     
-	treeNode* insert2(treeNode*, treeNode*); //****
-
-	//int height(treeNode*) const;//****
+	treeNode* insert2(treeNode*, treeNode*, int&); //****
 
 	int find(string, int, treeNode*, bool&) const;//****
 	string locate(string, treeNode*, string) const; //***
@@ -40,8 +39,6 @@ public:
 		tree = temp;
 	}
 
-	int height(treeNode*) const;//****
-
     int dataInserted() const;//****
     int numberOfNodes() const;//****
     
@@ -52,10 +49,11 @@ public:
 	treeNode* getTree() const;//****
 
     string locate(string) const; //***
+
+	string getRoot() const;
     
     friend bool operator==(const bTREE&, const bTREE&); //***
     friend bool operator!=(const bTREE&, const bTREE&); //***
 	friend ostream& operator<<(ostream&, const bTREE&); //***
-	//friend ostream& operator ^(const bTREE& lhs, const bTREE& rhs);
 };
 

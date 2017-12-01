@@ -30,6 +30,7 @@ int bTREE::dataInserted() const//****
 	return dataInserted(getTree());
 }
 
+// Returns the number of leaf nodes in the tree
 int bTREE::dataInserted(treeNode* tree1) const 
 {
 	if (tree1->leftNode == NULL && tree1->rightNode == NULL && tree1->leaf == true) {
@@ -40,11 +41,13 @@ int bTREE::dataInserted(treeNode* tree1) const
 	}
 }
 
+// Returns the number of nodes in the tree
 int bTREE::numberOfNodes() const//****
 {
 	return numberOfNodes(getTree());
 }
 
+// Helper function that returns the number of nodes in the tree
 int bTREE::numberOfNodes(treeNode* tree1) const
 {
 	if (tree1->leftNode == NULL && tree1->rightNode == NULL) {
@@ -55,79 +58,83 @@ int bTREE::numberOfNodes(treeNode* tree1) const
 	}
 }
 
-bTREE::treeNode* bTREE::insert2(treeNode* temp, treeNode* newnode)
+// Helper function that inserts data into the tree, only on the leaf node
+bTREE::treeNode* bTREE::insert2(treeNode* temp, treeNode* newnode,int& count)
 {
-	if (temp == NULL) {
-		temp = newnode;
+	count += 1;
+	// Only check left node because we move the root node to the rightNode so there will never be a right node empty at this height
+	if (temp->leftNode == NULL) {
+		bTREE::treeNode* temp2 = new bTREE::treeNode();
+		temp->leftNode = newnode;
+		temp2->data = temp->data;
+		temp2->time = temp->time;
+		temp2->leaf = true;
+		temp2->height = 1;
+		temp->rightNode = temp2;
+		temp->height = 2;
+		temp->data = "0";
+		temp->time = 0;
+		temp->leaf = false;
+		temp->leftNode->parent = temp;
+		temp->rightNode->parent = temp;
+		count += 1;					// Increment one more time because I need to move the root node to a leaf
+
+		bool heightIncrease = true;
+
+		// The height is changed only when the left and right nodes have the same height, else it keeps the height of the lowest tree
+		while (temp->parent != NULL && heightIncrease == true) {
+			if (heightIncrease == true) {
+				if (temp->parent->rightNode->height == temp->parent->leftNode->height) {
+					temp->parent->height = (temp->parent->height) + 1;
+				}
+				else {
+					heightIncrease = false;
+				}
+			}
+			temp = temp->parent;
+			count++;
+		}
 	}
 	else {
-		int lheight = height(temp->leftNode);
-		int rheight = height(temp->rightNode);
+		int lheight = temp->leftNode->height;
+		int rheight = temp->rightNode->height;
 
 		if (lheight <= rheight) {
-			insert2(temp->leftNode, newnode);
-			if (temp->leftNode == NULL) {
-				treeNode* temp2 = new treeNode();
-				temp->leftNode = newnode;
-				temp2->data = temp->data;
-				temp2->time = temp->time;
-				temp2->leaf = true;
-				temp->rightNode = temp2;
-				temp->data = "0";
-				temp->leaf = false;
-				temp->leftNode->parent = temp;
-				temp->rightNode->parent = temp;
-			}
+			insert2(temp->leftNode, newnode, count);
 		}
 		else {
-			insert2(temp->rightNode, newnode);
-			if (temp->rightNode == NULL) {
-				treeNode* temp2 = new treeNode();
-				temp->leftNode = newnode;
-				temp2->data = temp->data;
-				temp2->time = temp->time;
-				temp2->leaf = true;
-				temp->rightNode = temp2;
-				temp->data = "0";
-				temp->leaf = false;
-				temp->leftNode->parent = temp;
-				temp->rightNode->parent = temp;
-			}
+			insert2(temp->rightNode, newnode, count);
 		}
 	}
 	return temp;
 }
 
+// Insert data into a tree
+// Data only exists on the leaf nodes
 int bTREE::insert(string data1, int time1)
 {
+	int count = 1;
 	treeNode* tree2 = new treeNode();
-	treeNode* temp = tree;
 	tree2->leaf = true;
 	tree2->time = time1;
 	tree2->data = data1;
-	tree = insert2(temp, tree2);
-	return 1;
+	tree2->height = 1;
+	if (tree == NULL) {
+		tree = tree2;
+	}
+	else {
+		tree = insert2(tree, tree2, count);
+	}
+	return count;
 }
 
+// Return the tree
 bTREE::treeNode* bTREE::getTree() const 
 {
 	return tree;
 }
 
-int bTREE::height(treeNode* tree1) const
-{
-	if (tree1 == NULL)
-		return 0;
-	//Uses taller height
-	int lheight = height(tree1->leftNode);
-	int rheight = height(tree1->rightNode);
-
-	if (lheight > rheight)
-		return 1 + lheight;
-	else
-		return 1 + rheight;
-}
-
+// Finds a set of data and a time in the tree
 int bTREE::find(string data, int time) const
 
 {
@@ -141,10 +148,12 @@ int bTREE::find(string data, int time) const
 	}
 }
 
+// Helper function that finds a set of data and a time in the tree
+// Time -1 is a default value if no time is entered
 int bTREE::find(string data, int time, treeNode* node, bool& found) const
 {
 	int count = 1;
-	if (node->data == data && node->time == time) {
+	if (node->data == data && (node->time == time || time == -1)) {
 		found = true;
 		return count;
 	}
@@ -157,6 +166,7 @@ int bTREE::find(string data, int time, treeNode* node, bool& found) const
 	return count;
 }
 
+// Locates the left and right positon to find a value in the tree
 string bTREE::locate(string data) const
 {
 	string temp = locate(data, getTree(), "");
@@ -168,6 +178,7 @@ string bTREE::locate(string data) const
 	}
 }
 
+// Helper function that locates the left and right positon to find a value in the tree
 string bTREE::locate(string data, treeNode* node, string returnLocate) const 
 {
 	string left = "", right = "";
@@ -188,9 +199,20 @@ string bTREE::locate(string data, treeNode* node, string returnLocate) const
 	}
 }
 
+
+// Returns the root of the tree
+string bTREE::getRoot() const
+{
+	return tree->data;
+}
+
+// Equality operation
+// Compares each node of the lhs tree with the node of the rhs tree
+// Checks the number of nodes and height first to eliminate easy checks
 bool operator ==(const bTREE& lhs, const bTREE& rhs)
 {
-	if (lhs.height(lhs.getTree()) != rhs.height(rhs.getTree())) {
+	int count = 0;
+	if (lhs.getTree()->height != rhs.getTree()->height) {
 		return false;
 	}
 	else if (lhs.numberOfNodes(lhs.getTree()) != rhs.numberOfNodes(rhs.getTree())) {
@@ -199,6 +221,7 @@ bool operator ==(const bTREE& lhs, const bTREE& rhs)
 	return rhs.checkEquality(lhs.getTree(), rhs.getTree());
 }
 
+// Helper function that compares the nodes of two trees
 bool bTREE::checkEquality(treeNode* lhs, treeNode* rhs) const
 {
 	if (lhs == NULL || rhs == NULL) {
@@ -217,6 +240,7 @@ bool bTREE::checkEquality(treeNode* lhs, treeNode* rhs) const
 	}
 }
 
+// Not equal operator, simply returns the not of the equal operation
 bool operator !=(const bTREE& lhs, const bTREE& rhs)
 {
 	return !(lhs == rhs);
@@ -236,9 +260,9 @@ ostream& bTREE::display(ostream& out, treeNode* node) const
 		out << "-" << endl;
 	}
 	else {
-		displayLeft(out, node->leftNode, "       ");
-		out << "-------" << node->data << endl;
-		displayRight(out, node->rightNode, "       ");
+		displayLeft(out, node->leftNode, "           ");
+		out << "---------" << node->data << endl;
+		displayRight(out, node->rightNode, "           ");
 	}
 	return out;
 }
@@ -251,9 +275,9 @@ void bTREE::displayLeft(ostream& out, treeNode* subtree, string prefix) const
 		out << prefix + "/" << endl;
 	}
 	else {
-		displayLeft(out, subtree->leftNode, prefix + "         ");
-		out << prefix + "/-------" << subtree->data << endl;
-		displayRight(out, subtree->rightNode, prefix + "|        ");
+		displayLeft(out, subtree->leftNode, prefix + "           ");
+		out << prefix + "/---------" << subtree->data << endl;
+		displayRight(out, subtree->rightNode, prefix + "|           ");
 	}
 }
 
@@ -265,8 +289,8 @@ void bTREE::displayRight(ostream & outfile, treeNode* subtree, string prefix) co
 		outfile << prefix + "\\" << endl;
 	}
 	else {
-		displayLeft(outfile, subtree->leftNode, prefix + "|        ");
-		outfile << prefix + "\\-------" << subtree->data << endl;
-		displayRight(outfile, subtree->rightNode, prefix + "         ");
+		displayLeft(outfile, subtree->leftNode, prefix + "|           ");
+		outfile << prefix + "\\---------" << subtree->data << endl;
+		displayRight(outfile, subtree->rightNode, prefix + "           ");
 	}
 }

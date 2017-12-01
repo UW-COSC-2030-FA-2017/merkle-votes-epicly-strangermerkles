@@ -1,5 +1,6 @@
 #include "pMT.h"
 #include <iostream>
+using namespace std;
 
 pMT::pMT(int hashSelect)
 /**
@@ -28,64 +29,87 @@ int pMT::insert(string vote, int time)
  */
 
 {
-	bTREE::treeNode* tree2 = new bTREE::treeNode();
-	bTREE::treeNode* temp = myMerkle.getTree();
-	tree2->leaf = true;
-	tree2->time = time;
-	tree2->data = vote;
-	myMerkle.setTree(insert2(temp, tree2));
-	return 1;
-}
-
-bTREE::treeNode* pMT::insert2(bTREE::treeNode* temp, bTREE::treeNode* newnode)
-{
-	if (temp == NULL) {
-		temp = newnode;
-	}
-	else {
-		int lheight = myMerkle.height(temp->leftNode);
-		int rheight = myMerkle.height(temp->rightNode);
-
-		if (lheight <= rheight) {
-			insert2(temp->leftNode, newnode);
-			if (temp->leftNode == NULL) {
-				bTREE::treeNode* temp2 = new bTREE::treeNode();
-				temp->leftNode = newnode;
-				temp2->data = temp->data;
-				temp2->time = temp->time;
-				temp2->leaf = true;
-				temp->rightNode = temp2;
-				temp->data = hash(selectedHash, temp->leftNode->data + temp->rightNode->data);
-				temp->time = 0;
-				temp->leaf = false;
-				temp->leftNode->parent = temp;
-				temp->rightNode->parent = temp;
-			}
+	int count = 1;
+	// Emergency memoery so that if out of memory, this memory can be deleted and the error can be displayed
+	char* _emergencyMemory = new char[1000];
+	try {
+		bTREE::treeNode* tree2 = new bTREE::treeNode();
+		bTREE::treeNode* temp = myMerkle.getTree();
+		tree2->leaf = true;
+		tree2->time = time;
+		tree2->height = 1;
+		tree2->data = vote;
+		if (temp == NULL) {
+			myMerkle.setTree(tree2);
 		}
 		else {
-			insert2(temp->rightNode, newnode);
-			if (temp->rightNode == NULL) {
-				bTREE::treeNode* temp2 = new bTREE::treeNode();
-				temp->leftNode = newnode;
-				temp2->data = temp->data;
-				temp2->time = temp->time;
-				temp2->leaf = true;
-				temp->rightNode = temp2;
-				temp->data = hash(selectedHash, temp->leftNode->data + temp->rightNode->data);
-				temp->time = 0;
-				temp->leaf = false;
-				temp->leftNode->parent = temp;
-				temp->rightNode->parent = temp;
-			}
+			myMerkle.setTree(insert2(temp, tree2, count));
 		}
 	}
-	while (temp->parent != NULL) {
-		temp->parent->data = hash(selectedHash, temp->parent->leftNode->data + temp->parent->rightNode->data);
-		temp = temp->parent;
+	catch (std::bad_alloc& ba) {
+		// Delete the reserved memory so we can print an error message before exiting
+		delete[] _emergencyMemory;
+
+		cerr << "bad_alloc caught: " << ba.what() << endl;
+		return -1;
+	}
+	return count;
+}
+
+// Helper function that inserts data into the node
+// Count is used to count the total number of operations of the insert
+bTREE::treeNode* pMT::insert2(bTREE::treeNode* temp, bTREE::treeNode* newnode, int& count)
+{
+	count ++;
+	if (temp->leftNode == NULL) {
+		bTREE::treeNode* temp2 = new bTREE::treeNode();
+		temp->leftNode = newnode;
+		temp2->data = temp->data;
+		temp2->time = temp->time;
+		temp2->leaf = true; 
+		temp2->height = 1;
+		temp->rightNode = temp2;
+		temp->data = hash(selectedHash, temp->leftNode->data + temp->rightNode->data);
+		temp->height = 2;
+		temp->time = 0;
+		temp->leaf = false;
+		temp->leftNode->parent = temp;
+		temp->rightNode->parent = temp;
+		count += 1;					// Increment one more time because I need to move the root node to a leaf
+
+		bool heightIncrease = true;
+
+		// This recomputes hashes in the parent nodes
+		// The height is changed only when the left and right nodes have the same height, else it keeps the height of the lowest tree
+		while (temp->parent != NULL) {
+			if (heightIncrease == true) {
+				if (temp->parent->rightNode->height == temp->parent->leftNode->height) {
+					temp->parent->height = (temp->parent->height) + 1;
+				}
+				else {
+					heightIncrease = false;
+				}
+				temp->parent->data = hash(selectedHash, temp->parent->leftNode->data + temp->parent->rightNode->data);
+			}
+			temp = temp->parent;
+			count++;
+		}
+	}
+	// If leftNode isn't empty, then need to insert into the shortest branch and keep trying
+	else {
+		int lheight = temp->leftNode->height;
+		int rheight = temp->rightNode->height;
+
+		// Insert into the shortest height branch of the tree so the tree is balanced
+		if (lheight <= rheight) {
+			insert2(temp->leftNode, newnode, count);
+		}
+		else {
+			insert2(temp->rightNode, newnode, count);
+		}
 	}
 	return temp;
 }
-
 
 int pMT::find(string vote, int time) const
 /**
@@ -128,18 +152,21 @@ string pMT::locateHash(string hash) const
 	return myMerkle.locate(hash);
 }
 
-// http://blog.refu.co/?p=804
+string pMT::getRoot() const
+{
+	return myMerkle.getRoot();
+}
 
 string pMT::hash(int hashSelect, string vote) const
 {
 	if (hashSelect == 1) {
-		return hash_1(vote);
+		return padZeros(hash_1(vote));
 	}
 	else if (hashSelect == 2) {
-		return hash_2(vote);
+		return padZeros(hash_2(vote));
 	}
 	else {
-		return hash_3(vote);
+		return padZeros(hash_3(vote));
 	}
 }
 
@@ -150,7 +177,49 @@ string pMT::hash_1(string key) const
  * @return a hash of the key
  */
 {
-	unsigned int hash = 5381;
+	unsigned long int b = 378551;
+	unsigned int hash = 63689;
+	unsigned int i = 0;
+	char const* str = key.c_str();
+	unsigned int length = key.length();
+
+	for (i = 0; i < length; ++str, ++i)
+	{
+		hash = (*str * (i + 1))*b + (hash << 3);
+	}
+	return to_string(hash);
+}
+
+
+string pMT::hash_2(string key) const
+/**
+ * @brief A function that takes in a key and returns a hash of that key using some custom function
+ * @param key, a string
+ * @return a hash of the key
+ */
+{
+	unsigned long int hash = 4007;
+	unsigned int i = 0;
+	char const* str = key.c_str();
+	unsigned int length = key.length();
+
+	for (i = 0; i < length; ++str, ++i)
+	{
+		hash = hash + ((hash * (*str)) << (length - i));
+	}
+
+	return to_string(hash);
+}
+
+// Hash function credit to http://www.partow.net/programming/hashfunctions/
+string pMT::hash_3(string key) const
+/**
+* @brief A function that takes in a key and returns a hash of that key using some custom function
+* @param key, a string
+* @return a hash of the key
+*/
+{
+	unsigned int long hash = 5381;
 	unsigned int i = 0;
 	char const* str = key.c_str();
 	unsigned int length = key.length();
@@ -162,46 +231,13 @@ string pMT::hash_1(string key) const
 	return to_string(hash);
 }
 
-string pMT::hash_2(string key) const
-/**
- * @brief A function that takes in a key and returns a hash of that key using some custom function
- * @param key, a string
- * @return a hash of the key
- */
+string pMT::padZeros(string str) const
 {
-	unsigned int b = 378551;
-	unsigned int a = 63689;
-	unsigned int hash = 0;
-	unsigned int i = 0;
-	char const* str = key.c_str();
-	unsigned int length = key.length();
-
-	for (i = 0; i < length; ++str, ++i)
-	{
-		hash = hash * a + (*str);
-		a = a * b;
+	int strLength = str.length();
+	for (int i = 0; i < 32 - strLength; i++) {
+		str = "0" + str;
 	}
-	return to_string(hash);
-}
-
-string pMT::hash_3(string key) const
-/**
- * @brief A function that takes in a key and returns a hash of that key using some custom function
- * @param key, a string
- * @return a hash of the key
- */
-{
-	unsigned int hash = 10639;
-	unsigned int i = 0;
-	char const* str = key.c_str();
-	unsigned int length = key.length();
-
-	for (i = 0; i < length; ++str, ++i)
-	{
-		hash = ((hash << 5) ^ (hash >> 27)) ^ (*str);
-	}
-
-	return to_string(hash);
+	return str;
 }
 
 bool operator==(const pMT & lhs, const pMT & rhs)
@@ -212,7 +248,7 @@ bool operator==(const pMT & lhs, const pMT & rhs)
  * @return true if equal, false otherwise
  */
 {
-	return lhs.myMerkle == rhs.myMerkle;
+	return (lhs.myMerkle.getTree()->data == rhs.myMerkle.getTree()->data);
 }
 
 bool operator !=(const pMT& lhs, const pMT& rhs)
@@ -223,7 +259,7 @@ bool operator !=(const pMT& lhs, const pMT& rhs)
  * @return true if not equal, false otherwise
  */
 {
-	return lhs.myMerkle != rhs.myMerkle;
+	return (lhs.myMerkle.getTree()->data != rhs.myMerkle.getTree()->data);
 }
 
 ostream& operator <<(ostream& out, const pMT& p)
@@ -237,6 +273,7 @@ ostream& operator <<(ostream& out, const pMT& p)
 	return out << p.myMerkle;
 }
 
+// DOES NOT WORK
 pMT operator ^(const pMT& lhs, const pMT& rhs)
 /**
  * @brief Where do two trees differ
@@ -251,13 +288,16 @@ pMT operator ^(const pMT& lhs, const pMT& rhs)
 	memcpy(btemp, rhs.myMerkle.getTree(), sizeof(bTREE::treeNode) * rhs.myMerkle.numberOfNodes());
 	tempTree.setTree(temp.checkDifferent(lhs.myMerkle.getTree(), rhs.myMerkle.getTree(), btemp));
 	temp.myMerkle = tempTree;
-	cout << tempTree;
 	return temp;
 }
 
+// DOES NOT WORK
 bTREE::treeNode* pMT::checkDifferent(bTREE::treeNode* lhs, bTREE::treeNode* rhs, bTREE::treeNode* temp)
 {
-	if(lhs == NULL || lhs->data == rhs->data) {
+	if(lhs == NULL || rhs == NULL) {
+		return temp;
+	}
+	if (lhs->data == rhs->data) {
 		temp = NULL;
 	}
 	else {

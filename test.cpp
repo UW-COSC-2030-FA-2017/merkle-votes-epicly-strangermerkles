@@ -2,16 +2,19 @@
 #include <iostream>
 using namespace std;
 
-int main(int argc, char **argv)
+int main1(int argc, char **argv)
 {
 	cout << "Inserting elements into a binary tree.\n";
 	bTREE tree1 = bTREE();
-	tree1.insert("a", 1);
-	tree1.insert("b", 2);
-	tree1.insert("c", 3);
-	tree1.insert("d", 4);
-	tree1.insert("e", 5);
-	tree1.insert("f", 6);
+	cout << "Inserting a 1 takes :" << tree1.insert("a", 1) << " steps\n";
+	cout << "Inserting b 2 takes :" << tree1.insert("b", 2) << " steps\n";
+	cout << "Inserting c 3 takes :" << tree1.insert("c", 3) << " steps\n";
+	cout << "Inserting d 4 takes :" << tree1.insert("d", 4) << " steps\n";
+	cout << "Inserting e 5 takes :" << tree1.insert("e", 5) << " steps\n";
+	cout << "Inserting f 6 takes :" << tree1.insert("f", 6) << " steps\n";
+	//tree1.insert("g", 6);
+	//tree1.insert("h", 6);
+	//tree1.insert("i", 6);
 
 	cout << "Displaying the tree:\n";
 	cout << tree1 << endl;
@@ -64,12 +67,18 @@ int main(int argc, char **argv)
 	cout << "********************************************************\n";
 	cout << "Inserting elements into a merkle tree.\n";
 	pMT mtree1 = pMT();
-	mtree1.insert("a", 1);
-	mtree1.insert("b", 2);
-	mtree1.insert("c", 3);
-	mtree1.insert("d", 4);
-	mtree1.insert("e", 5);
-	mtree1.insert("f", 6);
+	cout << "Inserting a 1 takes :" << mtree1.insert("a", 1) << " steps\n";
+	cout << "Inserting b 2 takes :" << mtree1.insert("b", 2) << " steps\n";
+	cout << "Inserting c 3 takes :" << mtree1.insert("c", 3) << " steps\n";
+	cout << "Inserting d 4 takes :" << mtree1.insert("d", 4) << " steps\n";
+	cout << "Inserting e 5 takes :" << mtree1.insert("e", 5) << " steps\n";
+	cout << "Inserting f 6 takes :" << mtree1.insert("f", 6) << " steps\n";
+	cout << "Inserting g 6 takes :" << mtree1.insert("g", 6) << " steps\n";
+	cout << "Inserting h 6 takes :" << mtree1.insert("h", 6) << " steps\n";
+	cout << "Inserting i 6 takes :" << mtree1.insert("i", 6) << " steps\n";
+	cout << "Inserting j 6 takes :" << mtree1.insert("j", 6) << " steps\n";
+	cout << "Inserting k 6 takes :" << mtree1.insert("k", 6) << " steps\n";
+	cout << "Inserting l 6 takes :" << mtree1.insert("l", 6) << " steps\n";
 
 	cout << "Displaying the tree:\n";
 	cout << mtree1 << endl;
@@ -112,6 +121,5 @@ int main(int argc, char **argv)
 
 	cout << "Comparing the first and third tree for equality: " << (mtree1 == mtree3) << endl;
 	cout << "Comparing the first and third tree for inequality: " << (mtree1 != mtree3) << endl;
-	cout << "Displaying where two trees are different: " << (mtree1 ^ mtree3) << endl;
 	return 0;
 }
